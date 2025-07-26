@@ -353,7 +353,7 @@ class PortfolioOptimizer:
         except Exception as e:
             logger.error(f"Min volatility optimization failed: {e}")
             return self._fallback_equal_weight_portfolio()
-            
+    
     def optimize_efficient_return(
         self,
         target_return: float,
@@ -430,6 +430,100 @@ class PortfolioOptimizer:
         except Exception as e:
             logger.error(f"Target return optimization failed: {e}")
             return self.optimize_max_sharpe(target_allocation)
+    
+    def generate_efficient_frontier(
+        self,
+        num_portfolios: int = 50,
+        target_allocation: Optional[str] = None
+    ) -> pd.DataFrame:
+        """
+        Generate efficient frontier portfolios.
+        
+        Args:
+            num_portfolios: Number of portfolios to generate
+            target_allocation: Target allocation type
+            
+        Returns:
+            DataFrame with portfolio weights, returns, and risks
+        """
+        logger.info(f"Generating efficient frontier with {num_portfolios} portfolios")
+        
+        # Define return range
+        min_ret = self.expected_returns.min() * 1.1
+        max_ret = self.expected_returns.max() * 0.9
+        
+        target_returns = np.linspace(min_ret, max_ret, num_portfolios)
+        
+        frontier_data = []
+        
+        for target_ret in target_returns:
+            try:
+                result = self.optimize_efficient_return(target_ret, target_allocation)
+                
+                portfolio_data = {
+                    'return': result['expected_return'],
+                    'volatility': result['volatility'],
+                    'sharpe_ratio': result['sharpe_ratio'],
+                    **result['weights'].to_dict()
+                }
+                
+                frontier_data.append(portfolio_data)
+                
+            except:
+                continue
+        
+        frontier_df = pd.DataFrame(frontier_data)
+        logger.info(f"Generated {len(frontier_df)} efficient portfolios")
+        
+        return frontier_df
+    
+    def generate_lifecycle_portfolios(
+        self,
+        ages: List[int] = [25, 35, 45, 55, 60]
+    ) -> Dict[int, Dict[str, float]]:
+        """
+        Generate lifecycle portfolios with age-appropriate allocations.
+        
+        Args:
+            ages: List of ages for lifecycle portfolios
+            
+        Returns:
+            Dictionary mapping ages to portfolio allocations
+        """
+        logger.info(f"Generating lifecycle portfolios for ages: {ages}")
+        
+        lifecycle_portfolios = {}
+        
+        for age in ages:
+            # Determine allocation type based on age
+            if age <= 35:
+                allocation_type = 'Aggressive'
+            elif age <= 50:
+                allocation_type = 'Moderate'
+            else:
+                allocation_type = 'Conservative'
+            
+            try:
+                result = self.optimize_max_sharpe(target_allocation=allocation_type)
+                lifecycle_portfolios[age] = {
+                    'allocation_type': allocation_type,
+                    'weights': result['weights'].to_dict(),
+                    'expected_return': result['expected_return'],
+                    'volatility': result['volatility'],
+                    'sharpe_ratio': result['sharpe_ratio']
+                }
+                
+            except Exception as e:
+                logger.error(f"Lifecycle portfolio failed for age {age}: {e}")
+                lifecycle_portfolios[age] = {
+                    'allocation_type': allocation_type,
+                    'weights': self._get_equal_weights(),
+                    'expected_return': 0.08,
+                    'volatility': 0.15,
+                    'sharpe_ratio': 0.33
+                }
+        
+        return lifecycle_portfolios
     
     def _get_nps_constraints(self, w, allocation_type: str) -> List:
         """
@@ -510,145 +604,4 @@ class PortfolioOptimizer:
                 'expected_returns': self.expected_returns.to_dict(),
                 'volatilities': np.sqrt(np.diag(self.cov_matrix)).tolist()
             }
-        }
-
-    def optimize_risk_parity(
-        self,
-        target_allocation: Optional[str] = None
-    ) -> Dict[str, Union[float, pd.Series]]:
-        """
-        Optimize for risk parity portfolio (equal risk contribution).
-        
-        Args:
-            target_allocation: Target allocation type
-            
-        Returns:
-            Dictionary containing optimized weights and performance metrics
-        """
-        logger.info("Optimizing for risk parity portfolio")
-        
-        try:
-            # Simple risk parity: weight inversely proportional to volatility
-            volatilities = np.sqrt(np.diag(self.cov_matrix))
-            inv_vol_weights = 1.0 / volatilities
-            risk_parity_weights = inv_vol_weights / inv_vol_weights.sum()
-            
-            weights_series = pd.Series(risk_parity_weights, index=self.returns_data.columns)
-            
-            # Calculate performance metrics
-            expected_return = float(np.dot(risk_parity_weights, self.expected_returns.values))
-            portfolio_variance = float(np.dot(risk_parity_weights, np.dot(self.cov_matrix.values, risk_parity_weights)))
-            volatility = np.sqrt(portfolio_variance)
-            sharpe_ratio = (expected_return - self.risk_free_rate) / volatility if volatility > 0 else 0
-            
-            result = {
-                'weights': weights_series,
-                'expected_return': expected_return,
-                'volatility': volatility,
-                'sharpe_ratio': sharpe_ratio,
-                'method': 'risk_parity',
-                'target_allocation': target_allocation
-            }
-            
-            logger.info(f"Risk parity optimization successful: return={expected_return:.2%}, vol={volatility:.2%}")
-            self.optimization_results['risk_parity'] = result
-            return result
-            
-        except Exception as e:
-            logger.error(f"Risk parity optimization failed: {e}")
-            return self._fallback_equal_weight_portfolio()
-
-    def generate_lifecycle_portfolios(
-        self,
-        ages: List[int] = [25, 35, 45, 55, 60]
-    ) -> Dict[int, Dict[str, any]]:
-        """
-        Generate lifecycle portfolios with age-appropriate allocations.
-        
-        Args:
-            ages: List of ages for lifecycle portfolios
-            
-        Returns:
-            Dictionary mapping ages to portfolio allocations
-        """
-        logger.info(f"Generating lifecycle portfolios for ages: {ages}")
-        
-        lifecycle_portfolios = {}
-        
-        for age in ages:
-            # Determine allocation type based on age
-            if age <= 35:
-                allocation_type = 'Aggressive'
-            elif age <= 50:
-                allocation_type = 'Moderate'
-            else:
-                allocation_type = 'Conservative'
-            
-            try:
-                result = self.optimize_max_sharpe(target_allocation=allocation_type)
-                lifecycle_portfolios[age] = {
-                    'allocation_type': allocation_type,
-                    'weights': result['weights'].to_dict(),
-                    'expected_return': result['expected_return'],
-                    'volatility': result['volatility'],
-                    'sharpe_ratio': result['sharpe_ratio']
-                }
-                logger.info(f"Lifecycle portfolio for age {age} ({allocation_type}): {result['expected_return']:.2%} return, {result['volatility']:.2%} vol")
-                
-            except Exception as e:
-                logger.error(f"Lifecycle portfolio failed for age {age}: {e}")
-                lifecycle_portfolios[age] = {
-                    'allocation_type': allocation_type,
-                    'weights': self._get_equal_weights(),
-                    'expected_return': 0.08,
-                    'volatility': 0.15,
-                    'sharpe_ratio': 0.33
-                }
-        
-        return lifecycle_portfolios
-
-    def generate_efficient_frontier(
-        self,
-        num_portfolios: int = 50,
-        target_allocation: Optional[str] = None
-    ) -> pd.DataFrame:
-        """
-        Generate efficient frontier portfolios.
-        
-        Args:
-            num_portfolios: Number of portfolios to generate
-            target_allocation: Target allocation type
-            
-        Returns:
-            DataFrame with portfolio weights, returns, and risks
-        """
-        logger.info(f"Generating efficient frontier with {num_portfolios} portfolios")
-        
-        # Define return range
-        min_ret = self.expected_returns.min() * 1.1
-        max_ret = self.expected_returns.max() * 0.9
-        
-        target_returns = np.linspace(min_ret, max_ret, num_portfolios)
-        
-        frontier_data = []
-        
-        for target_ret in target_returns:
-            try:
-                result = self.optimize_efficient_return(target_ret, target_allocation)
-                
-                portfolio_data = {
-                    'return': result['expected_return'],
-                    'volatility': result['volatility'],
-                    'sharpe_ratio': result['sharpe_ratio'],
-                    **result['weights'].to_dict()
-                }
-                
-                frontier_data.append(portfolio_data)
-                
-            except:
-                continue
-        
-        frontier_df = pd.DataFrame(frontier_data)
-        logger.info(f"Generated {len(frontier_df)} efficient portfolios")
-        
-        return frontier_df
+        } 

@@ -8,7 +8,7 @@
 
 A **production-grade quantitative finance research repository** comparing India's market-linked **National Pension System (NPS)** with the guaranteed **Unified Pension Scheme (UPS)** using modern portfolio theory, Monte Carlo simulation, and institutional-grade risk analytics.
 
-> **Interview Showcase Project**: Designed for **Quant Researcher (55ip team, J.P. Morgan, Mumbai)** position, demonstrating expertise in portfolio optimization, risk modeling, and automated research workflows.
+> **Personal Research Project**: Demonstrating expertise in portfolio optimization, risk modeling, and automated quantitative research workflows using modern financial engineering techniques.
 
 ## 🎯 Executive Summary
 
@@ -156,29 +156,29 @@ optimizer = PortfolioOptimizer(returns_data, covariance_method='ledoit_wolf')
 - **Static Reports**: Matplotlib + WeasyPrint for PDF generation
 - **Executive Summary**: Automated table generation with key performance indicators
 
-## 🏦 How This Helps JPMC 55ip
+## 🎯 Project Value & Applications
 
-This project demonstrates **directly applicable skills** for quantitative research roles:
+This project demonstrates **comprehensive quantitative finance capabilities** applicable to various domains:
 
 ### Portfolio Construction & Optimization
 - **Modern Portfolio Theory**: Efficient frontier construction with realistic constraints
 - **Risk Budgeting**: Factor attribution and risk parity implementation
-- **Lifecycle Strategies**: Age-based dynamic allocation similar to target-date funds
+- **Lifecycle Strategies**: Age-based dynamic allocation for retirement planning
 
 ### Risk Management & Analytics
 - **Market Risk**: VaR/ES calculation across multiple methodologies
 - **Scenario Analysis**: Stress testing under adverse market conditions
-- **Regulatory Compliance**: PFRDA guideline implementation (similar to ERISA/DOL rules)
+- **Regulatory Analysis**: PFRDA guideline implementation and compliance modeling
 
-### Quantitative Research Workflows
+### Quantitative Research Framework
 - **Data Pipeline**: Robust ETL with caching and validation
 - **Research Automation**: End-to-end reproducible analysis pipeline
-- **Client Reporting**: Professional-grade tearsheets and executive summaries
+- **Professional Reporting**: Institution-grade tearsheets and executive summaries
 
-### Technology & Best Practices
-- **Production Code**: 80%+ test coverage, CI/CD, type hints, documentation
+### Technical Excellence
+- **Production Code**: 80%+ test coverage, CI/CD, type hints, comprehensive documentation
 - **Scalable Architecture**: Modular design supporting multiple asset classes
-- **Performance**: Optimized Monte Carlo with parallel processing capabilities
+- **Performance Optimization**: Efficient Monte Carlo with parallel processing capabilities
 
 ## 📁 Repository Structure
 
